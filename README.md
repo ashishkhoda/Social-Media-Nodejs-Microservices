@@ -66,16 +66,31 @@ Authentication: JWT (Access + Refresh Tokens)
 
 ## 🏗 Architecture
 
-                  API Gateway
-                       |
-   -----------------------------------------
-   |                 |                    |
-Identity Service   Post Service       Media Service
-                       |                  |
-                       |------> RabbitMQ <|
-                                  |
-                                  |
-                           Search Service
+```mermaid
+
+flowchart TD
+
+    A[API Gateway]
+
+    A --> I[Identity Service]
+    A --> P[Post Service]
+    A --> M[Media Service]
+    A --> S[Search Service]
+
+    P -- post.created / post.deleted --> R[RabbitMQ]
+
+    R -->|update index| S
+    R -->|cleanup media| M
+
+    I --> DB[(MongoDB)]
+    P --> DB
+    M --> DB
+    S --> DB
+
+    I --> C[(Redis Cache)]
+    P --> C
+    S --> C
+```
 
 MongoDB (Primary DB) used across services  
 Redis used for caching and rate limiting  
