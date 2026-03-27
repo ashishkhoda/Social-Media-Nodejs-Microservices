@@ -97,6 +97,46 @@ Redis used for caching and rate limiting
 
 ---
 
+## 🏗 Sequence Diagram
+
+```mermaid
+
+sequenceDiagram
+
+    participant U as User
+    participant G as API Gateway
+    participant P as Post Service
+    participant M as Media Service
+    participant R as RabbitMQ
+    participant S as Search Service
+    participant DB as MongoDB
+    participant C as Cloudinary
+
+    U->>G: Create Post Request (content + mediaIds)
+    G->>P: Forward request (with JWT validation)
+
+    P->>DB: Store post data
+    P-->>G: Post created response
+
+    %% Async event flow
+    P->>R: Publish post.created event
+
+    %% Media handling
+    R->>M: Consume post.created
+    M->>C: Process/verify media
+    M->>DB: Update media references
+
+    %% Search indexing
+    R->>S: Consume post.created
+    S->>DB: Update search index
+
+```
+
+MongoDB (Primary DB) used across services  
+Redis used for caching and rate limiting  
+
+---
+
 ## 🔗 API Overview
 
 Auth
