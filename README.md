@@ -1,131 +1,187 @@
-# Social Media Node.js Microservices
+# 🌐 Distributed Social Media Platform (Microservices)
 
-## Overview
-This project is a microservices-based social media backend that supports user authentication, post management, media uploads, and post search. Services communicate through RabbitMQ events and share common infrastructure like MongoDB, Redis, and JWT-based auth via an API gateway.
+A scalable microservices-based backend system for a social media platform, designed to handle user authentication, post management, media uploads, and search using event-driven architecture.
 
-## Features
-- Authentication (Identity Service): user registration/login, JWT access + refresh token flow, refresh-token rotation, logout, and rate limiting for sensitive endpoints.
-- Post Management (Post Service): create posts (with optional `mediaIds`), fetch paginated posts, fetch a single post by ID (cached), and delete user-owned posts; includes Redis caching and invalidation.
-- Media Upload (Media Service): upload to Cloudinary (multipart upload), list user media, and delete Cloudinary assets when related posts are deleted via events.
-- Search (Search Service): full-text search using MongoDB `$text`, with a dedicated search collection updated asynchronously from post events.
-- Event-Driven Collaboration (RabbitMQ): the Post Service publishes `post.created` / `post.deleted` events; Search Service and Media Service consume them to stay in sync.
+---
 
-## Tech Stack
-- Backend: Node.js + Express (microservices)
-- API Gateway: Express proxy + JWT validation
-- Database: MongoDB (Mongoose)
-- Caching / Rate limiting: Redis
-- Messaging: RabbitMQ
-- Media storage: Cloudinary
-- Auth: JWT access token + refresh tokens
+## 🚀 Overview
 
-## Architecture
-API Gateway
-  -> Identity Service (register/login/refresh/logout)
-  -> Post Service (CRUD + publish events)
-  -> Media Service (Cloudinary upload + delete on post deletion)
-  -> Search Service (MongoDB full-text search index)
+This system is built using a **microservices architecture**, where each service is independently responsible for a specific domain (auth, posts, media, search). Communication between services is handled asynchronously using **RabbitMQ**, ensuring scalability and loose coupling.
 
-## Base URL (Local)
-`http://localhost:3000`
+---
 
-Protected routes require:
-- `Authorization: Bearer <JWT_ACCESS_TOKEN>`
+## 🛠 Tech Stack
 
-## API Routes
-Auth (API Gateway)
-- `POST /v1/auth/register`
-- `POST /v1/auth/login`
-- `POST /v1/auth/refresh-token`
-- `POST /v1/auth/logout`
+Backend: Node.js, Express (Microservices)  
+API Gateway: Express (Proxy + JWT Validation)  
+Database: MongoDB (Mongoose)  
+Caching & Rate Limiting: Redis  
+Messaging: RabbitMQ  
+Media Storage: Cloudinary  
+Authentication: JWT (Access + Refresh Tokens)
 
-Posts (API Gateway)
-- `POST /v1/posts/create-post`
-- `GET /v1/posts/all-posts?page=1&limit=10`
-- `GET /v1/posts/:id`
-- `DELETE /v1/posts/:id`
+---
 
-Create post body (`POST /v1/posts/create-post`)
-- `content` (string, required)
-- `mediaIds` (string array, optional)
+## ✨ Core Features
 
-Media (API Gateway)
-- `POST /v1/media/upload` (multipart/form-data, field name: `file`)
-- `GET /v1/media/get`
+### 🔐 Authentication (Identity Service)
+- User registration & login  
+- JWT-based access + refresh token flow  
+- Refresh token rotation & logout  
+- Rate limiting on sensitive endpoints  
 
-Search (API Gateway)
-- `GET /v1/search/posts?query=<text>`
+---
 
-## Local Setup (Recommended)
+### 📝 Post Management (Post Service)
+- Create posts (with optional media)  
+- Fetch paginated posts  
+- Fetch individual post (with caching)  
+- Delete user-owned posts  
+- Redis-based caching with invalidation  
+
+---
+
+### 🖼 Media Handling (Media Service)
+- Upload media to Cloudinary  
+- Retrieve user media  
+- Automatic cleanup of media on post deletion (event-driven)  
+
+---
+
+### 🔎 Search (Search Service)
+- Full-text search using MongoDB `$text` indexing  
+- Dedicated search collection for optimized reads  
+- Updated asynchronously via events  
+
+---
+
+### ⚡ Event-Driven Architecture
+- RabbitMQ used for inter-service communication  
+- Post Service publishes:
+  - post.created
+  - post.deleted  
+- Search & Media services consume events to stay in sync  
+
+---
+
+## 🏗 Architecture
+
+                  API Gateway
+                       |
+   -----------------------------------------
+   |                 |                    |
+Identity Service   Post Service       Media Service
+                       |                  |
+                       |------> RabbitMQ <|
+                                  |
+                                  |
+                           Search Service
+
+MongoDB (Primary DB) used across services  
+Redis used for caching and rate limiting  
+
+---
+
+## 🔗 API Overview
+
+Auth
+- POST /v1/auth/register
+- POST /v1/auth/login
+- POST /v1/auth/refresh-token
+- POST /v1/auth/logout
+
+Posts
+- POST /v1/posts/create-post
+- GET /v1/posts/all-posts?page=1&limit=10
+- GET /v1/posts/:id
+- DELETE /v1/posts/:id
+
+Media
+- POST /v1/media/upload
+- GET /v1/media/get
+
+Search
+- GET /v1/search/posts?query=<text>
+
+---
+
+## ⚙️ Local Setup
 
 ### 1. Prerequisites
 - Node.js 20+
-- MongoDB (Atlas or local)
-- Redis (for caching + rate limiting)
-- RabbitMQ (for events)
-- Cloudinary account (for media uploads)
+- MongoDB (Atlas / local)
+- Redis
+- RabbitMQ
+- Cloudinary account
 
-### 2. Configure environment variables
-Create/update the `.env` file inside each service directory:
+---
 
-`api-gateway/.env`
-- `PORT`
-- `IDENTITY_SERVICE_URL`
-- `POST_SERVICE_URL`
-- `MEDIA_SERVICE_URL`
-- `SEARCH_SERVICE_URL`
-- `REDIS_URL`
-- `JWT_SECRET`
+### 2. Environment Setup
 
-`identity-service/.env`
-- `PORT`
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `NODE_ENV`
-- `REDIS_URL`
+API Gateway
+PORT=
+IDENTITY_SERVICE_URL=
+POST_SERVICE_URL=
+MEDIA_SERVICE_URL=
+SEARCH_SERVICE_URL=
+REDIS_URL=
+JWT_SECRET=
 
-`post-service/.env`
-- `PORT`
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `NODE_ENV`
-- `REDIS_URL`
-- `RABBITMQ_URL`
+Identity Service
+PORT=
+MONGODB_URI=
+JWT_SECRET=
+REDIS_URL=
 
-`media-service/.env`
-- `PORT`
-- `MONGODB_URI`
-- `NODE_ENV`
-- `RABBITMQ_URL`
-- `CLOUDINARY_CLOUD_NAME`
-- `CLOUDINARY_API_KEY`
-- `CLOUDINARY_API_SECRET`
+Post Service
+PORT=
+MONGODB_URI=
+JWT_SECRET=
+REDIS_URL=
+RABBITMQ_URL=
 
-`search-service/.env`
-- `PORT`
-- `MONGODB_URI`
-- `NODE_ENV`
-- `REDIS_URL`
-- `RABBITMQ_URL`
+Media Service
+PORT=
+MONGODB_URI=
+RABBITMQ_URL=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
-### 3. Run services
-Start Redis and RabbitMQ (or use Docker Compose for them).
+Search Service
+PORT=
+MONGODB_URI=
+REDIS_URL=
+RABBITMQ_URL=
 
-Then run each service in a separate terminal:
-- `cd api-gateway && npm install && npm run dev`
-- `cd identity-service && npm install && npm run dev`
-- `cd post-service && npm install && npm run dev`
-- `cd media-service && npm install && npm run dev`
-- `cd search-service && npm install && npm run dev`
+---
 
-### 4. Docker Compose (Optional)
-From repo root:
-- `docker-compose up --build`
+### 3. Run Services
 
-Notes:
-- This starts Redis + RabbitMQ containers along with your Node services.
-- You must ensure your `.env` files point to a reachable MongoDB and include valid Cloudinary credentials.
+cd api-gateway && npm install && npm run dev
+cd identity-service && npm install && npm run dev
+cd post-service && npm install && npm run dev
+cd media-service && npm install && npm run dev
+cd search-service && npm install && npm run dev
 
-## Notes
-- The API Gateway validates JWT and forwards the authenticated user id to other services via `x-user-id`.
-- Post caching is invalidated when a post is created or deleted, and search indexing is updated via RabbitMQ events.
+---
+
+### Docker (Optional)
+
+docker-compose up --build
+
+---
+
+## 🧠 Key Design Highlights
+
+- Microservices architecture for scalability and separation of concerns  
+- Event-driven communication using RabbitMQ  
+- API Gateway for centralized auth and routing  
+- Redis caching to reduce DB load  
+- Asynchronous processing for better performance under load  
+
+---
+
+## 👨‍💻 Author
+
+Ashish Khoda
