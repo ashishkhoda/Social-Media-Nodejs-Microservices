@@ -104,7 +104,8 @@ Redis used for caching and rate limiting
 sequenceDiagram
 
     participant U as User
-    participant G as API Gateway
+    participant G as API Gateway (Proxy)
+    participant I as Identity Service
     participant P as Post Service
     participant M as Media Service
     participant R as RabbitMQ
@@ -112,23 +113,38 @@ sequenceDiagram
     participant DB as MongoDB
     participant C as Cloudinary
 
-    U->>G: Create Post Request (content + mediaIds)
-    G->>P: Forward request (with JWT validation)
+    %% Authentication flow
+    U->>G: Login / Register
+    G->>I: Forward auth request
+    I->>DB: Validate / create user
+    I-->>G: Return JWT
+    G-->>U: Auth response
 
-    P->>DB: Store post data
-    P-->>G: Post created response
+    %% Media upload flow
+    U->>G: Upload Media
+    G->>M: Forward request (JWT)
+    M->>C: Upload to Cloudinary
+    M->>DB: Store media metadata
+    M-->>G: Return mediaId
+    G-->>U: Media uploaded
+
+    %% Post creation flow
+    U->>G: Create Post (content + mediaIds)
+    G->>P: Forward request (JWT)
+    P->>DB: Store post
+    P-->>G: Post created
+    G-->>U: Response
 
     %% Async event flow
-    P->>R: Publish post.created event
+    P->>R: Publish post.created
 
-    %% Media handling
-    R->>M: Consume post.created
-    M->>C: Process/verify media
-    M->>DB: Update media references
-
-    %% Search indexing
-    R->>S: Consume post.created
+    %% Consumers
+    R->>S: Consume event
     S->>DB: Update search index
+
+    R->>M: Consume event
+    M->>C: Cleanup/verify media if needed
+
 
 ```
 
